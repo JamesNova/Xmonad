@@ -62,6 +62,18 @@ import XMonad.Layout.WindowArranger (windowArrange, WindowArrangerMsg(..))
 import qualified XMonad.Layout.ToggleLayouts as T (toggleLayouts, ToggleLayout (Toggle))
 import qualified XMonad.Layout.MultiToggle as MT (Toggle(..))
 
+   -- Prompt
+import XMonad.Prompt
+import XMonad.Prompt.Input
+import XMonad.Prompt.FuzzyMatch
+import XMonad.Prompt.Man
+import XMonad.Prompt.Pass
+import XMonad.Prompt.Shell
+import XMonad.Prompt.Ssh
+import XMonad.Prompt.Unicode
+import XMonad.Prompt.XMonad
+import Control.Arrow (first)
+
    -- Utilities
 import XMonad.Util.Run (runProcessWithInput, safeSpawn, spawnPipe)
 import XMonad.Util.SpawnOnce
@@ -71,14 +83,20 @@ import XMonad.Util.NamedScratchpad
 
 
 -----------------------------------------------------------------------
--- BASIC VARS
+-- VARIABLES
 -----------------------------------------------------------------------
 
 myFont :: String
 myFont = "xft:SauceCodePro Nerd Font Mono:regular:size=9:antialias=true:hinting=true"
 
+myEmojiFont :: String
+myEmojiFont = "xft:JoyPixels:regular:size=9:antialias=true:hinting=true"
+
 myModMask :: KeyMask
 myModMask = mod1Mask
+
+mySuprMask :: KeyMask
+mySuprMask = mod4Mask
 
 myTerminal :: String
 myTerminal = "alacritty"
@@ -111,16 +129,99 @@ myFocusFollowsMouse = True
 myClickJustFocuses :: Bool
 myClickJustFocuses = False
 
+myStartupHook :: X ()
+myStartupHook = do
+  spawnOnce "picom &"
+  spawnOnce "trayer --edge top --align right --widthtype request --padding 6 --SetDockType true --SetPartialStrut true --expand true --monitor 1 --transparent true --alpha 0 --tint 0x282c34  --height 22 &"
+  spawnOnce "volumeicon &"
+  spawnOnce "emacs --daemon &"
+  spawnOnce "feh --randomize --bg-fill ~/wallpapers/*" -- random wallpaper each session
+  --spawnOnce "nitrogen --restore &"                   -- nitrogen wallpaper
+  setWMName "LG3D"
+-----------------------------------------------------------------------
+-- GRID MENU
+-----------------------------------------------------------------------
 
-myWorkspaces = ["1","2","3","4","5","6","7","8","9"]
+myColorizer :: Window -> Bool -> X (String, String)
+myColorizer = colorRangeFromClassName
+                  (0x28,0x2c,0x34) -- lowest inactive bg
+                  (0x28,0x2c,0x34) -- highes inactive bg
+                  (0xc7,0x92,0xea) -- active bg
+                  (0xc0,0xa7,0x9a) -- inactive fg
+                  (0x28,0x2c,0x34) -- active fg
+
+mygridConfig :: p -> GSConfig Window
+mygridConfig colorizer = (buildDefaultGSConfig myColorizer)
+   { gs_cellheight   = 40
+   , gs_cellwidth    = 200
+   , gs_cellpadding  = 6
+   , gs_originFractX = 0.5
+   , gs_originFractY = 0.5
+   , gs_font         = myFont
+   } 
+
+spawnSelected' :: [(String, String)] -> X ()
+spawnSelected' lst = gridselect conf lst >>= flip whenJust spawn
+   where conf = def
+                  { gs_cellheight   = 40
+                  , gs_cellwidth    = 200
+                  , gs_cellpadding  = 6
+                  , gs_originFractX = 0.5
+                  , gs_originFractY = 0.5
+                  , gs_font         = myFont
+                  }
+
+myAppGrid = [ ("Audacity", "audacity")
+                 , ("Emacs","emacsclient -c -a emacs")
+                 , ("Firefox","firefox")
+                 , ("OBS","obs")
+                 , ("Gimp","gimp")
+                 ]
+
+
+-----------------------------------------------------------------------
+-- SCRATCHPADS
+-----------------------------------------------------------------------
+
+myScratchPads :: [NamedScratchpad]
+myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
+                , NS "mocp" spawnMocp findMocp manageMocp
+                , NS "calculator" spawnCalc findCalc manageCalc
+                ]
+  where
+    spawnTerm  = myTerminal ++ " -t scratchpad"
+    findTerm   = title =? "scratchpad"
+    manageTerm = customFloating $ W.RationalRect 1 t w h
+               where
+                 h = 0.9
+                 w = 0.9
+                 t = 0.95 -h
+                 l = 0.95 -w
+    spawnMocp  = myTerminal ++ " -t mocp -e mocp"
+    findMocp   = title =? "mocp"
+    manageMocp = customFloating $ W.RationalRect l t w h
+               where
+                 h = 0.9
+                 w = 0.9
+                 t = 0.95 -h
+                 l = 0.95 -w
+    spawnCalc  = "qalculate-gtk"
+    findCalc   = className =? "Qalculate-gtk"
+    manageCalc = customFloating $ W.RationalRect l t w h
+               where
+                 h = 0.5
+                 w = 0.4
+                 t = 0.75 -h
+                 l = 0.70 -w
 
 -----------------------------------------------------------------------
 -- KEY BINDS
 -----------------------------------------------------------------------
+
 myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
     -- launch a terminal
-    [ ((modm .|. shiftMask, xK_Return), spawn $ XMonad.terminal conf)
+    [ ((modm .|. shiftMask, xK_Return), spawn (myTerminal))
 
     -- launch dmenu
     , ((modm,               xK_p     ), spawn "dmenu_run")
@@ -188,8 +289,6 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- Restart xmonad
     , ((modm              , xK_q     ), spawn "xmonad --recompile; xmonad --restart")
 
-    -- Run xmessage with a summary of the default keybindings (useful for beginners)
-    , ((modm .|. shiftMask, xK_slash ), spawn ("echo \"" ++ help ++ "\" | xmessage -file -"))
     ]
     ++
 
@@ -210,10 +309,14 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
         | (key, sc) <- zip [xK_w, xK_e, xK_r] [0..]
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
 
+    -- Named Scracthpads Keys
+      where nonNSP         = WSIs (return (\ws -> W.tag ws /= "NSP"))
+            nonEmptyNonNSP = WSIs (return (\ws -> isJust (W.stack ws) && W.tag ws /= "NSP"))
 
-------------------------------------------------------------------------
--- Mouse Binds
---
+-----------------------------------------------------------------------
+-- MOUSE BINDS
+-----------------------------------------------------------------------
+
 myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 
     -- mod-button1, Set the window to floating mode and move by dragging
@@ -230,10 +333,22 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
     -- you may also bind events to the mouse scroll wheel (button4 and button5)
     ]
 
-------------------------------------------------------------------------
--- Layouts
---
-myLayout = avoidStruts (tiled ||| Mirror tiled ||| Full)
+
+-----------------------------------------------------------------------
+-- CONFIG VARIABLES
+-----------------------------------------------------------------------
+
+myShowWNameTheme :: SWNConfig
+myShowWNameTheme = def
+    { swn_font    = "xft:Ubuntu:bold:size=60"
+    , swn_fade    = 1.0
+    , swn_bgcolor = "#1c1f24"
+    , swn_color   = "#ffffff"
+    }
+
+
+-- LAYOUTS
+myLayoutHook = avoidStruts (tiled ||| Mirror tiled ||| Full)
   where
      -- default tiling algorithm partitions the screen into two panes
      tiled   = Tall nmaster delta ratio
@@ -247,138 +362,64 @@ myLayout = avoidStruts (tiled ||| Mirror tiled ||| Full)
      -- Percent of screen to increment by when resizing panes
      delta   = 3/100
 
-------------------------------------------------------------------------
--- Window Rules
+myWorkspaces = [" dev ", " WWW ", " sys ", " doc ", " mpv ", " gfx ", " vbox ", " irc ", " zoom "]
+myWorkspaceIndices = M.fromList $ zipWith (,) myWorkspaces [1..] -- (,) == \x y -> (x,y)
 
--- To find the property name associated with a program, use
+clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
+    where i = fromJust $ M.lookup ws myWorkspaceIndices
+
 -- > xprop | grep WM_CLASS
--- and click on the client you're interested in.
---
--- To match on the WM_NAME, you can use 'title' in the same way that
--- 'className' and 'resource' are used below.
---
+myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
 myManageHook = composeAll
-    [ className =? "MPlayer"        --> doFloat
-    , className =? "Gimp"           --> doFloat
-    , resource  =? "desktop_window" --> doIgnore
-    , resource  =? "kdesktop"       --> doIgnore ]
+     [ className =? "confirm"        --> doFloat
+     , className =? "file_progress"  --> doFloat
+     , className =? "dialog"         --> doFloat
+     , className =? "download"       --> doFloat
+     , className =? "error"          --> doFloat
+     , className =? "Gimp"           --> doFloat
+     , className =? "notification"   --> doFloat
+     , className =? "splash"         --> doFloat
+     , className =? "toolbar"        --> doFloat
+     , className =? "Mplayer"        --> doFloat
+     , title =? "Oracle VM VirtualBox Manager" --> doFloat
+     , title =? "Mozilla Firefox"    --> doShift ( myWorkspaces !! 2 )
+     , className =? "Gimp"           --> doShift ( myWorkspaces !! 6 )
+     , className =? "mpv"            --> doShift ( myWorkspaces !! 5 )
+     , className =? "VirtualBox Manager" --> doShift ( myWorkspaces !! 7 )
+     , (className =? "firefox" <&&> resource =? "Dialog") --> doFloat -- Firefox Dialogls
+     , isFullscreen --> doFullFloat
+     ] <+> namedScratchpadManageHook myScratchPads
 
-------------------------------------------------------------------------
--- Event handling
-
--- * EwmhDesktops users should change this to ewmhDesktopsEventHook
---
--- Defines a custom handler function for X Events. The function should
--- return (All True) if the default handler is to be run afterwards. To
--- combine event hooks use mappend or mconcat from Data.Monoid.
---
-myEventHook = mempty
-
-------------------------------------------------------------------------
--- Status bars and logging
-
--- Perform an arbitrary action on each internal state change or X event.
--- See the 'XMonad.Hooks.DynamicLog' extension for examples.
---
-myLogHook = return ()
-
-------------------------------------------------------------------------
--- Startup hook
-
--- Perform an arbitrary action each time xmonad starts or is restarted
--- with mod-q.  Used by, e.g., XMonad.Layout.PerWorkspace to initialize
--- per-workspace layout choices.
---
--- By default, do nothing.
-myStartupHook = do
-  spawnOnce "nitrogen --restore &"
-  spawnOnce "picom &"
-
-------------------------------------------------------------------------
--- Now run xmonad with all the defaults we set up.
-
--- Run xmonad with the settings you specify. No need to modify this.
---
+main :: IO ()
 main = do
   xmproc <- spawnPipe "xmobar ~/.xmobarrc"
-  xmonad $ docks defaults
+  xmonad $ ewmh def
+      { manageHook         = myManageHook <+> manageDocks
+      , handleEventHook    = docksEventHook
+      , modMask            = myModMask
+      , terminal           = myTerminal
+      , startupHook        = myStartupHook
+      , layoutHook         = showWName' myShowWNameTheme $ myLayoutHook
+      , focusFollowsMouse  = myFocusFollowsMouse
+      , clickJustFocuses   = myClickJustFocuses
+      , borderWidth        = myBorderWidth
+      , workspaces         = myWorkspaces
+      , normalBorderColor  = myNormalBorderColor
+      , focusedBorderColor = myFocusedBorderColor
+      , keys               = myKeys
+      , mouseBindings      = myMouseBindings
+      , logHook            = dynamicLogWithPP $ namedScratchpadFilterOutWorkspacePP $ xmobarPP
+            -- 'pp' is for xmobar
+            { ppOutput = \x -> hPutStrLn xmproc x
+            , ppCurrent = xmobarColor "#98be65" "" . wrap "[" "]"
+            , ppVisible = xmobarColor "#98be65" "" . clickable
+            , ppHidden = xmobarColor "#82AAFF" "" . wrap "*" "" . clickable
+            , ppHiddenNoWindows = xmobarColor "#c792ea" "" . clickable
+            , ppTitle = xmobarColor "#b3afc2" "" . shorten 60
+            , ppSep = "<fc=#666666> <fn=1>|</fn> </fc>"
+            , ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!"
+            , ppExtras = [windowCount]
+            , ppOrder = \(ws:l:t:ex) -> [ws,l]++ex++[t]
+            }
 
--- A structure containing your configuration settings, overriding
--- fields in the default config. Any you don't override, will
--- use the defaults defined in xmonad/XMonad/Config.hs
---
--- No need to modify this.
---
-defaults = def {
-      -- simple stuff
-        terminal           = myTerminal,
-        focusFollowsMouse  = myFocusFollowsMouse,
-        clickJustFocuses   = myClickJustFocuses,
-        borderWidth        = myBorderWidth,
-        modMask            = myModMask,
-        workspaces         = myWorkspaces,
-        normalBorderColor  = myNormalBorderColor,
-        focusedBorderColor = myFocusedBorderColor,
-
-      -- key bindings
-        keys               = myKeys,
-        mouseBindings      = myMouseBindings,
-
-      -- hooks, layouts
-        layoutHook         = myLayout,
-        manageHook         = myManageHook,
-        handleEventHook    = myEventHook,
-        logHook            = myLogHook,
-        startupHook        = myStartupHook
-    }
-
--- | Finally, a copy of the default bindings in simple textual tabular format.
-help :: String
-help = unlines ["The default modifier key is 'alt'. Default keybindings:",
-    "",
-    "-- launching and killing programs",
-    "mod-Shift-Enter  Launch xterminal",
-    "mod-p            Launch dmenu",
-    "mod-Shift-p      Launch gmrun",
-    "mod-Shift-c      Close/kill the focused window",
-    "mod-Space        Rotate through the available layout algorithms",
-    "mod-Shift-Space  Reset the layouts on the current workSpace to default",
-    "mod-n            Resize/refresh viewed windows to the correct size",
-    "",
-    "-- move focus up or down the window stack",
-    "mod-Tab        Move focus to the next window",
-    "mod-Shift-Tab  Move focus to the previous window",
-    "mod-j          Move focus to the next window",
-    "mod-k          Move focus to the previous window",
-    "mod-m          Move focus to the master window",
-    "",
-    "-- modifying the window order",
-    "mod-Return   Swap the focused window and the master window",
-    "mod-Shift-j  Swap the focused window with the next window",
-    "mod-Shift-k  Swap the focused window with the previous window",
-    "",
-    "-- resizing the master/slave ratio",
-    "mod-h  Shrink the master area",
-    "mod-l  Expand the master area",
-    "",
-    "-- floating layer support",
-    "mod-t  Push window back into tiling; unfloat and re-tile it",
-    "",
-    "-- increase or decrease number of windows in the master area",
-    "mod-comma  (mod-,)   Increment the number of windows in the master area",
-    "mod-period (mod-.)   Deincrement the number of windows in the master area",
-    "",
-    "-- quit, or restart",
-    "mod-Shift-q  Quit xmonad",
-    "mod-q        Restart xmonad",
-    "mod-[1..9]   Switch to workSpace N",
-    "",
-    "-- Workspaces & screens",
-    "mod-Shift-[1..9]   Move client to workspace N",
-    "mod-{w,e,r}        Switch to physical/Xinerama screens 1, 2, or 3",
-    "mod-Shift-{w,e,r}  Move client to screen 1, 2, or 3",
-    "",
-    "-- Mouse bindings: default actions bound to mouse events",
-    "mod-button1  Set the window to floating mode and move by dragging",
-    "mod-button2  Raise the window to the top of the stack",
-    "mod-button3  Set the window to floating mode and resize by dragging"]
+      }
