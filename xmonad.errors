@@ -1,0 +1,58 @@
+
+xmonad.hs:514:30: error:
+    * Couldn't match expected type `XConfig Layout
+                                    -> M.Map (ButtonMask, KeySym) (X ())'
+                  with actual type `[(String, X ())]'
+    * In the `keys' field of a record
+      In the first argument of `ewmh', namely
+        `def
+           {manageHook = myManageHook <+> manageDocks,
+            handleEventHook = docksEventHook, modMask = myModMask,
+            terminal = myTerminal, startupHook = myStartupHook,
+            layoutHook = showWName' myShowWNameTheme $ myLayoutHook,
+            focusFollowsMouse = myFocusFollowsMouse,
+            clickJustFocuses = myClickJustFocuses, borderWidth = myBorderWidth,
+            workspaces = myWorkspaces, normalBorderColor = myNormalBorderColor,
+            focusedBorderColor = myFocusedBorderColor,
+            mouseBindings = myMouseBindings, keys = myKeys,
+            logHook = dynamicLogWithPP
+                        $ namedScratchpadFilterOutWorkspacePP
+                            $ xmobarPP
+                                {ppOutput = \ x -> hPutStrLn xmproc x,
+                                 ppCurrent = xmobarColor "#98be65" "" . wrap "[" "]",
+                                 ppVisible = xmobarColor "#98be65" "" . clickable,
+                                 ppHidden = xmobarColor "#82AAFF" "" . wrap "*" "" . clickable,
+                                 ppHiddenNoWindows = xmobarColor "#c792ea" "" . clickable,
+                                 ppTitle = xmobarColor "#b3afc2" "" . shorten 60,
+                                 ppSep = "<fc=#666666> <fn=1>|</fn> </fc>",
+                                 ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!",
+                                 ppExtras = [windowCount],
+                                 ppOrder = \ (ws : l : t : ex) -> [...] ++ ex ++ [...]}}'
+      In the second argument of `($)', namely
+        `ewmh
+           def
+             {manageHook = myManageHook <+> manageDocks,
+              handleEventHook = docksEventHook, modMask = myModMask,
+              terminal = myTerminal, startupHook = myStartupHook,
+              layoutHook = showWName' myShowWNameTheme $ myLayoutHook,
+              focusFollowsMouse = myFocusFollowsMouse,
+              clickJustFocuses = myClickJustFocuses, borderWidth = myBorderWidth,
+              workspaces = myWorkspaces, normalBorderColor = myNormalBorderColor,
+              focusedBorderColor = myFocusedBorderColor,
+              mouseBindings = myMouseBindings, keys = myKeys,
+              logHook = dynamicLogWithPP
+                          $ namedScratchpadFilterOutWorkspacePP
+                              $ xmobarPP
+                                  {ppOutput = \ x -> hPutStrLn xmproc x,
+                                   ppCurrent = xmobarColor "#98be65" "" . wrap "[" "]",
+                                   ppVisible = xmobarColor "#98be65" "" . clickable,
+                                   ppHidden = xmobarColor "#82AAFF" "" . wrap "*" "" . clickable,
+                                   ppHiddenNoWindows = xmobarColor "#c792ea" "" . clickable,
+                                   ppTitle = xmobarColor "#b3afc2" "" . shorten 60,
+                                   ppSep = "<fc=#666666> <fn=1>|</fn> </fc>",
+                                   ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!",
+                                   ppExtras = [windowCount],
+                                   ppOrder = \ (ws : l : t : ex) -> [...] ++ ex ++ [...]}}'
+    |
+514 |       , keys               = myKeys
+    |                              ^^^^^^
