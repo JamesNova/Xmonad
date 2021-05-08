@@ -382,13 +382,14 @@ myManageHook = composeAll
      , className =? "toolbar"        --> doFloat
      , className =? "Mplayer"        --> doFloat
      , title =? "Oracle VM VirtualBox Manager" --> doFloat
-     , title =? "Mozilla Firefox"    --> doShift ( myWorkspaces !! 2 )
-     , className =? "Gimp"           --> doShift ( myWorkspaces !! 6 )
-     , className =? "mpv"            --> doShift ( myWorkspaces !! 5 )
-     , className =? "VirtualBox Manager" --> doShift ( myWorkspaces !! 7 )
+     , title =? "Mozilla Firefox"    --> doShift ( myWorkspaces !! 1 )
+     , className =? "Gimp"           --> doShift ( myWorkspaces !! 5 )
+     , className =? "mpv"            --> doShift ( myWorkspaces !! 4 )
+     , className =? "VirtualBox Manager" --> doShift ( myWorkspaces !! 6 )
      , (className =? "firefox" <&&> resource =? "Dialog") --> doFloat -- Firefox Dialogls
      , isFullscreen --> doFullFloat
      ] <+> namedScratchpadManageHook myScratchPads
+
 
 main :: IO ()
 main = do
@@ -406,7 +407,6 @@ main = do
       , workspaces         = myWorkspaces
       , normalBorderColor  = myNormalBorderColor
       , focusedBorderColor = myFocusedBorderColor
-      , keys               = myKeys
       , mouseBindings      = myMouseBindings
       , logHook            = dynamicLogWithPP $ namedScratchpadFilterOutWorkspacePP $ xmobarPP
             -- 'pp' is for xmobar
