@@ -335,6 +335,102 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 
 
 -----------------------------------------------------------------------
+-- LAYOUTS
+-----------------------------------------------------------------------
+
+mySpacing :: Integer -> l a -> XMonad.Layout.LayoutModifier.ModifiedLayout Spacing l a
+mySpacing i = spacingRaw True (Border i i i i) True (Border i i i i) True
+
+-- Same as above but no borders are applied of fewer than two windows
+mySpacing' :: Integer -> l a -> XMonad.Layout.LayoutModifier.ModifiedLayout Spacing l a
+mySpacing' i = spacingRaw True (Border i i i i) True (Border i i i i) True
+
+-- limitWindows n sets maximum number of windows displayed for layout.
+-- mySpacing n sets the gap size around the windows.
+tall     = renamed [Replace "tall"]
+           $ smartBorders
+           $ addTabs shrinkText myTabTheme
+           $ subLayout [] (smartBorders Simplest)
+           $ limitWindows 12
+           $ mySpacing 8
+           $ ResizableTall 1 (3/100) (1/2) []
+magnify  = renamed [Replace "magnify"]
+           $ smartBorders
+           $ addTabs shrinkText myTabTheme
+           $ subLayout [] (smartBorders Simplest)
+           $ magnifier
+           $ limitWindows 12
+           $ mySpacing 8
+           $ ResizableTall 1 (3/100) (1/2) []
+monocle  = renamed [Replace "monocle"]
+           $ smartBorders
+           $ addTabs shrinkText myTabTheme
+           $ subLayout [] (smartBorders Simplest)
+           $ limitWindows 20 Full
+floats   = renamed [Replace "floats"]
+           $ smartBorders
+           $ limitWindows 20 simplestFloat
+grid     = renamed [Replace "grid"]
+           $ smartBorders
+           $ addTabs shrinkText myTabTheme
+           $ subLayout [] (smartBorders Simplest)
+           $ limitWindows 12
+           $ mySpacing 8
+           $ mkToggle (single MIRROR)
+           $ Grid (16/10)
+spirals  = renamed [Replace "spirals"]
+           $ smartBorders
+           $ addTabs shrinkText myTabTheme
+           $ subLayout [] (smartBorders Simplest)
+           $ mySpacing' 8
+           $ spiral (6/7)
+threeCol = renamed [Replace "threeCol"]
+           $ smartBorders
+           $ addTabs shrinkText myTabTheme
+           $ subLayout [] (smartBorders Simplest)
+           $ limitWindows 7
+           $ ThreeCol 1 (3/100) (1/2)
+threeRow = renamed [Replace "threeRow"]
+           $ smartBorders
+           $ addTabs shrinkText myTabTheme
+           $ subLayout [] (smartBorders Simplest)
+           $ limitWindows 7
+           $ Mirror
+           $ ThreeCol 1 (3/100) (1/2)
+tabs     = renamed [Replace "tabs"]
+           $ tabbed shrinkText myTabTheme
+tallAccordion  = renamed [Replace "tallAccordion"]
+           $ Accordion
+wideAccordion  = renamed [Replace "wideAccordion"]
+           $ Mirror Accordion
+
+-- setting colors for tabs layout and tabs sublayout.
+myTabTheme = def { fontName            = myFont
+                 , activeColor         = "#46d9ff"
+                 , inactiveColor       = "#313846"
+                 , activeBorderColor   = "#46d9ff"
+                 , inactiveBorderColor = "#282c34"
+                 , activeTextColor     = "#282c34"
+                 , inactiveTextColor   = "#d0d0d0"
+                 }
+
+myLayoutHook = avoidStruts $ mouseResize $ windowArrange $ T.toggleLayouts floats
+               $ mkToggle (NBFULL ?? NOBORDERS ?? EOT) myDefaultLayout
+             where
+               myDefaultLayout =     withBorder myBorderWidth tall
+                                 ||| magnify
+                                 ||| noBorders monocle
+                                 ||| floats
+                                 ||| noBorders tabs
+                                 ||| grid
+                                 ||| spirals
+                                 ||| threeCol
+                                 ||| threeRow
+                                 ||| tallAccordion
+                                 ||| wideAccordion
+
+
+-----------------------------------------------------------------------
 -- CONFIG VARIABLES
 -----------------------------------------------------------------------
 
@@ -345,22 +441,6 @@ myShowWNameTheme = def
     , swn_bgcolor = "#1c1f24"
     , swn_color   = "#ffffff"
     }
-
-
--- LAYOUTS
-myLayoutHook = avoidStruts (tiled ||| Mirror tiled ||| Full)
-  where
-     -- default tiling algorithm partitions the screen into two panes
-     tiled   = Tall nmaster delta ratio
-
-     -- The default number of windows in the master pane
-     nmaster = 1
-
-     -- Default proportion of screen occupied by master pane
-     ratio   = 1/2
-
-     -- Percent of screen to increment by when resizing panes
-     delta   = 3/100
 
 myWorkspaces = [" dev ", " WWW ", " sys ", " doc ", " mpv ", " gfx ", " vbox ", " irc ", " zoom "]
 myWorkspaceIndices = M.fromList $ zipWith (,) myWorkspaces [1..] -- (,) == \x y -> (x,y)
