@@ -526,4 +526,4 @@ main = do
             , ppOrder = \(ws:l:t:ex) -> [ws,l]++ex++[t]
             }
 
-      }
+      } `additionalKeysP` myKeys
