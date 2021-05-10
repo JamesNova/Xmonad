@@ -93,10 +93,10 @@ myEmojiFont :: String
 myEmojiFont = "xft:JoyPixels:regular:size=9:antialias=true:hinting=true"
 
 myModMask :: KeyMask
-myModMask = mod1Mask
+myModMask = mod4Mask
 
-mySuprMask :: KeyMask
-mySuprMask = mod4Mask
+myAltMask :: KeyMask
+myAltMask = mod1Mask
 
 myTerminal :: String
 myTerminal = "alacritty"
@@ -135,8 +135,8 @@ myStartupHook = do
   spawnOnce "trayer --edge top --align right --widthtype request --padding 6 --SetDockType true --SetPartialStrut true --expand true --monitor 1 --transparent true --alpha 0 --tint 0x282c34  --height 22 &"
   spawnOnce "volumeicon &"
   spawnOnce "emacs --daemon &"
-  spawnOnce "feh --randomize --bg-fill ~/wallpapers/*" -- random wallpaper each session
-  --spawnOnce "nitrogen --restore &"                   -- nitrogen wallpaper
+  --spawnOnce "feh --randomize --bg-fill ~/wallpapers/*" -- random wallpaper each session
+  spawnOnce "nitrogen --restore &"                   -- nitrogen wallpaper
   setWMName "LG3D"
 -----------------------------------------------------------------------
 -- GRID MENU
@@ -352,7 +352,7 @@ tall     = renamed [Replace "tall"]
            $ addTabs shrinkText myTabTheme
            $ subLayout [] (smartBorders Simplest)
            $ limitWindows 12
-           $ mySpacing 8
+           $ mySpacing 6
            $ ResizableTall 1 (3/100) (1/2) []
 magnify  = renamed [Replace "magnify"]
            $ smartBorders
@@ -455,6 +455,7 @@ myManageHook = composeAll
      , className =? "file_progress"  --> doFloat
      , className =? "dialog"         --> doFloat
      , className =? "download"       --> doFloat
+     , className =? "xmessage"       --> doFloat
      , className =? "error"          --> doFloat
      , className =? "Gimp"           --> doFloat
      , className =? "notification"   --> doFloat
