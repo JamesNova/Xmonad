@@ -118,7 +118,7 @@ myNormalBorderColor :: String
 myNormalBorderColor = "#dddddd"
 
 myFocusedBorderColor :: String
-myFocusedBorderColor = "#ff0000"
+myFocusedBorderColor = "#ffb400"
 
 windowCount :: X (Maybe String)
 windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
@@ -268,7 +268,7 @@ myKeys =
         , ("C-M4-l", incScreenSpacing 4)         -- Increase screen spacing
 
     -- Grid Select (CTR-g followed by a key)
-        , ("C-g g", spawnSelected' myAppGrid)                 -- grid select favorite apps
+        , ("C-g a", spawnSelected' myAppGrid)                 -- grid select favorite apps
         , ("C-g t", goToSelected $ mygridConfig myColorizer)  -- goto selected window
         , ("C-g b", bringSelected $ mygridConfig myColorizer) -- bring selected window
 
@@ -376,14 +376,6 @@ tall     = renamed [Replace "tall"]
            $ limitWindows 12
            $ mySpacing 6 
            $ ResizableTall 1 (3/100) (1/2) []
-magnify  = renamed [Replace "magnify"]
-           $ smartBorders
-           $ addTabs shrinkText myTabTheme
-           $ subLayout [] (smartBorders Simplest)
-           $ magnifier
-           $ limitWindows 12
-           $ mySpacing 8
-           $ ResizableTall 1 (3/100) (1/2) []
 monocle  = renamed [Replace "monocle"]
            $ smartBorders
            $ addTabs shrinkText myTabTheme
@@ -400,24 +392,11 @@ grid     = renamed [Replace "grid"]
            $ mySpacing 8
            $ mkToggle (single MIRROR)
            $ Grid (16/10)
-spirals  = renamed [Replace "spirals"]
-           $ smartBorders
-           $ addTabs shrinkText myTabTheme
-           $ subLayout [] (smartBorders Simplest)
-           $ mySpacing' 8
-           $ spiral (6/7)
 threeCol = renamed [Replace "threeCol"]
            $ smartBorders
            $ addTabs shrinkText myTabTheme
            $ subLayout [] (smartBorders Simplest)
            $ limitWindows 7
-           $ ThreeCol 1 (3/100) (1/2)
-threeRow = renamed [Replace "threeRow"]
-           $ smartBorders
-           $ addTabs shrinkText myTabTheme
-           $ subLayout [] (smartBorders Simplest)
-           $ limitWindows 7
-           $ Mirror
            $ ThreeCol 1 (3/100) (1/2)
 tabs     = renamed [Replace "tabs"]
            $ tabbed shrinkText myTabTheme
@@ -440,14 +419,11 @@ myLayoutHook = avoidStruts $ mouseResize $ windowArrange $ T.toggleLayouts float
                $ mkToggle (NBFULL ?? NOBORDERS ?? EOT) myDefaultLayout
              where
                myDefaultLayout =     withBorder myBorderWidth tall
-                                 ||| magnify
                                  ||| noBorders monocle
-                                 ||| floats
-                                 ||| noBorders tabs
                                  ||| grid
-                                 ||| spirals
+                                 ||| noBorders tabs
+                                 ||| floats
                                  ||| threeCol
-                                 ||| threeRow
                                  ||| tallAccordion
                                  ||| wideAccordion
 
