@@ -93,10 +93,10 @@ myEmojiFont :: String
 myEmojiFont = "xft:JoyPixels:regular:size=9:antialias=true:hinting=true"
 
 myModMask :: KeyMask
-myModMask = mod1Mask
+myModMask = mod4Mask
 
-mySuprMask :: KeyMask
-mySuprMask = mod4Mask
+myAltMask :: KeyMask
+myAltMask = mod1Mask
 
 myTerminal :: String
 myTerminal = "alacritty"
@@ -226,7 +226,7 @@ myKeys =
         , ("M-S-q", io exitSuccess)              -- Quits xmonad
 
     -- Run Prompt
-        , ("M-S-<Return>", spawn "dmeni_run -i -p \"Run: \"") -- Dmenu
+        , ("M-S-<Return>", spawn "dmenu_run -i -p \"Run: \"") -- Dmenu
 
     -- Other Prompts
         , ("M-p a", spawn "dmsounds")  -- pick color from our scheme
@@ -511,7 +511,6 @@ main = do
       , normalBorderColor  = myNormalBorderColor
       , focusedBorderColor = myFocusedBorderColor
       , mouseBindings      = myMouseBindings
-      , keys               = myKeys
       , logHook            = dynamicLogWithPP $ namedScratchpadFilterOutWorkspacePP $ xmobarPP
             -- 'pp' is for xmobar
             { ppOutput = \x -> hPutStrLn xmproc x
